@@ -40,7 +40,7 @@ def get_gear_ratio(speed_reducer): # parker
     raise Exception("The speed_reducr input must be a dictionary type")
 
   if speed_reducer['type'].lower() != 'reverted':
-    raise Exception("The speed reducer you are using does not contain \'reverted'\ as its type")
+    raise Exception("The speed reducer you are using does not contain reverted as its type")
 
   d2 = speed_reducer['diam_gear']
   d1 = speed_reducer['diam_pinion']
