@@ -50,7 +50,6 @@ def get_gear_ratio(speed_reducer): # parker
 
 
 def tau_dcmotor(omega, motor): # parker
-
   if (type(motor) != dict):
     raise Exception("The omega input must be a dictionary type")
   if not isinstance(omega, (int, float, np.ndarray)):
@@ -70,6 +69,8 @@ def tau_dcmotor(omega, motor): # parker
   if isinstance(omega, np.ndarray):
     tau =  []
     for i in range (len(omega)):
+      if omega.ndim != 1:
+        raise Exception("The omega input must be a 1D numpy array")
       if  omega[i] > motor["speed_noload"]:
         tau.append(float(motor["torque_noload"]))
       if  omega[i] < 0 :
