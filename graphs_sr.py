@@ -1,50 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from subfunctions import tau_dcmotor
+from subfunctions import get_gear_ratio
 
-
-def tau_dcmotor(omega, motor): # parker
-
-  if (type(motor) != dict):
-    raise Exception("The omega input must be a dictionary type")
-  if not isinstance(omega, (int, float, np.ndarray)):
-      raise Exception("The omega input must be of type int, float, or np.ndarray")
-
-  if isinstance(omega, (int, float)):
-    tau = 0
-    if  omega > motor["speed_noload"]:
-      tau  = motor["torque_noload"]
-    if  omega < 0 :
-      tau = motor['torque_stall']
-    if  0 <= omega <= motor["speed_noload"]:
-      tau = motor['torque_stall'] - ((motor['torque_stall'] - motor["torque_noload"])/motor["speed_noload"])*omega
-
-    return tau
-
-  if isinstance(omega, np.ndarray):
-    tau =  []
-    for i in range (len(omega)):
-      if  omega[i] > motor["speed_noload"]:
-        tau.append(float(motor["torque_noload"]))
-      if  omega[i] < 0 :
-        tau.append(float(motor['torque_stall']))
-      if  0 <= omega[i] <= 3.8:
-        tau.append(float (motor['torque_stall'] - ((motor['torque_stall'] - motor["torque_noload"])/motor["speed_noload"])*omega[i]))
-
-    tau = np.array(tau)
-
-    return tau
-def get_gear_ratio(speed_reducer): # parker
-  if (type(speed_reducer) != dict):
-    raise Exception("The speed_reducr input must be a dictionary type")
-
-  if speed_reducer['type'].lower() != 'reverted':
-    raise Exception("The speed reducer you are using does not contain \'reverted'\ as its type")
-
-  d2 = speed_reducer['diam_gear']
-  d1 = speed_reducer['diam_pinion']
-  Ng = (d2/d1)**2
-
-  return Ng
 
 rover = {
   'wheel_assembly': {
@@ -57,8 +15,6 @@ rover = {
   'power_subsys': {'mass': 90}
 }
 planet = {'g': 3.72}
-
-
 
 motor = rover['wheel_assembly']['motor']
 omega = np.array([1,2,3,4,5,6,7,8,9,10])

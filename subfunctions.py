@@ -21,9 +21,9 @@ def get_mass(rover): # parker
 
   mass = 0
 
-  mass += 6 * int(rover['wheel_assembly']['wheel']['mass'])
-  mass += 6 * int(rover['wheel_assembly']['speed_reducer']['mass'])
-  mass += 6 * int(rover['wheel_assembly']['motor']['mass'])
+  mass += 6 * float(rover['wheel_assembly']['wheel']['mass'])
+  mass += 6 * float(rover['wheel_assembly']['speed_reducer']['mass'])
+  mass += 6 * float(rover['wheel_assembly']['motor']['mass'])
 
   mass += rover['chassis']['mass']
 
@@ -40,7 +40,7 @@ def get_gear_ratio(speed_reducer): # parker
     raise Exception("The speed_reducr input must be a dictionary type")
 
   if speed_reducer['type'].lower() != 'reverted':
-    raise Exception("The speed reducer you are using does not contain \'reverted'\ as its type")
+    raise Exception("The speed reducer you are using does not contain reverted as its type")
 
   d2 = speed_reducer['diam_gear']
   d1 = speed_reducer['diam_pinion']
@@ -180,4 +180,4 @@ def F_net(omega, terrain_angle, rover, planet, Crr): #steve
   F_g = F_gravity(terrain_angle, rover, planet)
   F_r = F_rolling(omega, terrain_angle, rover, planet, Crr)
     
-  return F_d + F_g - F_r  
+  return F_d + F_g + F_r  
