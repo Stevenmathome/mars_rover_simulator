@@ -176,15 +176,13 @@ def F_rolling(omega, terrain_angle, rover, planet, Crr):
     radius = rover['wheel_assembly']['wheel']['radius']
     # Convert angle to radians
     
-    frr=[]
-    for i in range(len(terrain_angle)):
-      terrain_rad = np.radians(terrain_angle[i])
-      # Compute normal force
-      N_force = (mass * g * np.cos(terrain_rad)) / 6
-      # Compute rolling resistance force
-      wheel_omega = omega[i] / gear_ratio
-      frr.append((-Crr * N_force * math.erf(40*radius*wheel_omega)) * 6)
-    frr = np.array(frr)
+    
+    terrain_rad = np.radians(terrain_angle)
+    # Compute normal force
+    N_force = (mass * g * np.cos(terrain_rad)) / 6
+    # Compute rolling resistance force
+    wheel_omega = omega / gear_ratio
+    frr= (-Crr * N_force * math.erf(40*radius*wheel_omega)) * 6
     return frr
 
 def F_net(omega, terrain_angle, rover, planet, Crr): #steve
