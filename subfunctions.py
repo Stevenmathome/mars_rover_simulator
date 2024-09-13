@@ -1,4 +1,5 @@
 import numpy as np
+import math
 # Constants
 
 # Dictionaries
@@ -51,9 +52,12 @@ def get_gear_ratio(speed_reducer): # parker
 
 def tau_dcmotor(omega, motor): # parker
   if (type(motor) != dict):
-    raise Exception("The omega input must be a dictionary type")
-  if not isinstance(omega, (int, float, np.ndarray)):
+    raise Exception("The motor input must be a dictionary type")
+  elif not isinstance(omega, (int, float, np.ndarray)):
       raise Exception("The omega input must be of type int, float, or np.ndarray")
+  elif isinstance(omega, np.ndarray):
+    if omega.ndim != 1:
+        raise Exception("First input must be a scalar or vector. Matrices are not allowed")
 
   if isinstance(omega, (int, float)):
     tau = 0
@@ -69,13 +73,11 @@ def tau_dcmotor(omega, motor): # parker
   if isinstance(omega, np.ndarray):
     tau =  []
     for i in range (len(omega)):
-      if omega.ndim != 1:
-        raise Exception("The omega input must be a 1D numpy array")
       if  omega[i] > motor["speed_noload"]:
         tau.append(float(motor["torque_noload"]))
-      if  omega[i] < 0 :
+      elif omega[i] < 0 :
         tau.append(float(motor['torque_stall']))
-      if  0 <= omega[i] <= 3.8:
+      elif  0 <= omega[i] <= motor["speed_noload"]:
         tau.append(float (motor['torque_stall'] - ((motor['torque_stall'] - motor["torque_noload"])/motor["speed_noload"])*omega[i]))
 
     tau = np.array(tau)
@@ -84,33 +86,39 @@ def tau_dcmotor(omega, motor): # parker
 
 
 def F_drive(omega,rover): 
-    if not (np.isscalar(omega) or (isinstance(omega,np.ndarray) and omega.ndim in [0,1])): 
-        raise Exception("Speical Message")
+# Check if rover is a dictionary
+  if not isinstance(rover, dict):
+      raise Exception("The 2nd input must be a dictionary type.")
+  
+  # Check if omega is a valid type
+  if not isinstance(omega, (int, float, np.ndarray)):
+      raise Exception("The 1st input must be of type int, float, or np.ndarray.")
+  
+  # Check if omega is a 1D numpy array (if applicable)
+  if isinstance(omega, np.ndarray) and omega.ndim != 1:
+      raise Exception("First input must be a scalar or 1D vector. Matrices are not allowed.")
 
-    if not isinstance(rover,dict):
-        raise Exception ("Special ")
+  motor = rover['wheel_assembly']['motor']
+  speed_reducer = rover['wheel_assembly']['speed_reducer']
+  wheel = rover['wheel_assembly']['wheel']
 
-    motor = rover['wheel_assembly']['motor']
-    speed_reducer = rover['wheel_assembly']['speed_reducer']
-    wheel = rover['wheel_assembly']['wheel']
-
-    tau_motor = tau_dcmotor(omega, motor)
-    N_gear = get_gear_ratio(speed_reducer)
-    
-    tau_wheel = N_gear * tau_motor
-    F_wheel = tau_wheel / wheel['radius']
-    
-    return 6 * F_wheel  # Multiply by 6 for all wheels  
+  tau_motor = tau_dcmotor(omega, motor)
+  N_gear = get_gear_ratio(speed_reducer)
+  
+  tau_wheel = N_gear * tau_motor
+  F_wheel = tau_wheel / wheel['radius']
+  
+  return 6 * F_wheel  # Multiply by 6 for all wheels  
 
 def F_gravity(terrain_angle, rover, planet): 
     if not (np.isscalar(terrain_angle) or (isinstance(terrain_angle, np.ndarray) and terrain_angle.ndim in [0, 1])):
-        raise Exception("Special Message")
+        raise Exception("Terrain angle must be a scalar or a 1D numpy array")
 
-    if isinstance(terrain_angle, np.ndarray) and not np.all((-75 <= terrain_angle) & (terrain_angle <= 75)):
-        raise Exception("Special Message ")
+    if isinstance(terrain_angle, np.ndarray) and not np.all((-75 <terrain_angle) & (terrain_angle < 75)):
+        raise Exception("Terrain angle must be between -75 and 75 degrees")
 
     if not isinstance(rover, dict):
-        raise Exception("Must be dict ")
+        raise Exception("Must be dict")
 
     if not isinstance(planet, dict):
         raise Exception("must be dict ")
@@ -147,22 +155,25 @@ def F_rolling(omega, terrain_angle, rover, planet, Crr):
     mass = get_mass(rover)
     g = planet['g']
     gear_ratio = get_gear_ratio(rover['wheel_assembly']['speed_reducer'])
-
+    radius = rover['wheel_assembly']['wheel']['radius']
     # Convert angle to radians
-    terrain_rad = np.radians(terrain_angle)
+    
+    frr=[]
+    for i in range(len(terrain_angle)):
+      terrain_rad = np.radians(terrain_angle[i])
+      # Compute normal force
+      N_force = (mass * g * np.cos(terrain_rad)) / 6
 
-    # Compute normal force
-    N_force = (mass * g * np.cos(terrain_rad)) / 6
-
-    # Compute rolling resistance force
-    wheel_omega = omega * gear_ratio
-    return -Crr * N_force * np.sign(wheel_omega) * 6
+      # Compute rolling resistance force
+      wheel_omega = omega[i] * gear_ratio
+      frr.append((-Crr * N_force * math.erf(40*radius*wheel_omega)) * 6)
+    frr = np.array(frr)
+    return frr
 
 def F_net(omega, terrain_angle, rover, planet, Crr): #steve
   # Input validation
   if not (np.isscalar(omega) and np.isscalar(terrain_angle)) and not (isinstance(omega, np.ndarray) and isinstance(terrain_angle, np.ndarray) and omega.shape == terrain_angle.shape):
     raise Exception("The first two inputs must be either scalars or numpy arrays of the same shape.")
-
 
   if np.any(np.abs(terrain_angle) > 75):
     raise Exception("All elements of terrain_angle must be between -75 degrees and +75 degrees.")
