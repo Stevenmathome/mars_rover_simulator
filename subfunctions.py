@@ -99,11 +99,10 @@ def F_drive(omega,rover):
   elif isinstance(omega, (int, float)):
     if np.isnan(omega) or np.isinf(omega):
       raise Exception("The omega input cannot contain NaN or Inf values")
-  # elif not isinstance(omega, (int, float, np.ndarray)):
-  #     print(type(omega))
-  #     raise Exception("The omega input must be of type int, float, or np.ndarray and not a NoneType")
+  elif not isinstance(omega, (int, float, np.ndarray)):
+    raise Exception("The omega input must be of type int, float, or np.ndarray and not a NoneType")
   if isinstance(omega, list):
-    raise Exception("The omega input cannot be a list")
+    raise Exception("The first input 'omega' must be a scalar or numpy array.")
   if isinstance(omega, np.ndarray):
         # Check if omega contains None values
         if np.any(omega == None):
