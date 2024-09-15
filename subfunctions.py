@@ -53,8 +53,6 @@ def get_gear_ratio(speed_reducer): # parker
 def tau_dcmotor(omega, motor): # parker
   if (type(motor) != dict):
     raise Exception("The motor input must be a dictionary type")
-  # elif not isinstance(omega, (int, float, np.ndarray)):
-  #     raise Exception("The omega input must be of type int, float, or np.ndarray omega")
   elif isinstance(omega, np.ndarray):
     if omega.ndim != 1:
         raise Exception("First input must be a scalar or vector. Matrices are not allowed")
@@ -89,32 +87,29 @@ def tau_dcmotor(omega, motor): # parker
 
 def F_drive(omega,rover): 
   
-  if (type(rover) != dict):
-    raise Exception("The motor input must be a dictionary type")
-  if rover is None:
-        raise ValueError("The rover input cannot be None")
-    # Check if omega is None
-  if omega is None:
-        raise ValueError("The omega input cannot be None")
-  elif isinstance(omega, (int, float)):
-    if np.isnan(omega) or np.isinf(omega):
-      raise Exception("The omega input cannot contain NaN or Inf values")
-  # elif not isinstance(omega, (int, float, np.ndarray)):
-  #     print(type(omega))
-  #     raise Exception("The omega input must be of type int, float, or np.ndarray and not a NoneType")
-  if isinstance(omega, list):
-    raise Exception("The omega input cannot be a list")
-  if isinstance(omega, np.ndarray):
-        # Check if omega contains None values
-        if np.any(omega == None):
-            raise ValueError("The omega input cannot contain None values")
-        # Check if omega contains NaN or Inf
-        if np.any(np.isnan(omega)):
-            raise ValueError("The omega input cannot contain NaN values")
-        if np.any(np.isinf(omega)):
-            raise ValueError("The omega input cannot contain Inf values")
-        if omega.ndim != 1:
-            raise ValueError
+  # if (type(rover) != dict):
+  #   raise Exception("The second input rover must be a dictionary.")
+  # if rover is None:
+  #       raise ValueError("The rover input cannot be None")
+  #   # Check if omega is None
+  # if omega is None:
+  #       raise ValueError("The omega input cannot be None")
+  # #elif isinstance(omega, (int, float)):
+  # #  if np.isnan(omega) or np.isinf(omega):
+  # #    raise Exception("The omega input cannot contain NaN or Inf values")
+  # if isinstance(omega, list):
+  #   raise Exception("The first input 'omega' must be a scalar or numpy array.")
+  # if isinstance(omega, np.ndarray):
+  #       # Check if omega contains None values
+  #       if np.any(omega == None):
+  #           raise ValueError("The omega input cannot contain None values")
+  #       # Check if omega contains NaN or Inf
+  #       if np.any(np.isnan(omega)):
+  #           raise ValueError("The omega input cannot contain NaN values")
+  #       if np.any(np.isinf(omega)):
+  #           raise ValueError("The omega input cannot contain Inf values")
+  #       if omega.ndim != 1:
+  #           raise ValueError
           
   motor = rover['wheel_assembly']['motor']
   speed_reducer = rover['wheel_assembly']['speed_reducer']
@@ -175,15 +170,26 @@ def F_rolling(omega, terrain_angle, rover, planet, Crr):
     gear_ratio = get_gear_ratio(rover['wheel_assembly']['speed_reducer'])
     radius = rover['wheel_assembly']['wheel']['radius']
     # Convert angle to radians
-    
-    
-    terrain_rad = np.radians(terrain_angle)
-    # Compute normal force
-    N_force = (mass * g * np.cos(terrain_rad)) / 6
-    # Compute rolling resistance force
-    wheel_omega = omega / gear_ratio
-    frr= (-Crr * N_force * math.erf(40*radius*wheel_omega)) * 6
-    return frr
+    if isinstance(terrain_angle,(int,float)):
+      terrain_rad = np.radians(terrain_angle)
+      # Compute normal force
+      N_force = (mass * g * np.cos(terrain_rad)) / 6
+      # Compute rolling resistance force
+      wheel_omega = omega / gear_ratio
+      frr = (-Crr * N_force * math.erf(40*radius*wheel_omega)) * 6
+      return frr
+      
+    else:
+      frr=[]
+      for i in range(len(terrain_angle)):
+        terrain_rad = np.radians(terrain_angle[i])
+        # Compute normal force
+        N_force = (mass * g * np.cos(terrain_rad)) / 6
+        # Compute rolling resistance force
+        wheel_omega = omega[i] / gear_ratio
+        frr.append((-Crr * N_force * math.erf(40*radius*wheel_omega)) * 6)
+      frr = np.array(frr)
+      return frr
 
 def F_net(omega, terrain_angle, rover, planet, Crr): #steve
   # Input validation
