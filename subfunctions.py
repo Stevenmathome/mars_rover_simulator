@@ -57,7 +57,7 @@ def tau_dcmotor(omega, motor): # parker
   #     raise Exception("The omega input must be of type int, float, or np.ndarray omega")
   elif isinstance(omega, np.ndarray):
     if omega.ndim != 1:
-        raise Exception("First input must be a scalar or vector. Matrices are not allowed")
+        raise Exception("First input omega must be a scalar or vector numpy array. Matrices are not allowed")
 
   if isinstance(omega, (int, float)):
     tau = 0
