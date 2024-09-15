@@ -30,7 +30,7 @@ if isinstance(tau, np.ndarray):
   power_out = []
   for i in range(len(tau)):
     tau_out.append(Ng * tau[i])
-    omega_out.append(Ng * omega[i])
+    omega_out.append(omega[i]/Ng)
     power_out.append(tau_out[i] * omega_out[i])
 
   tau_out = np.array(tau_out)
@@ -39,7 +39,7 @@ if isinstance(tau, np.ndarray):
 
 if isinstance(tau, (int, float)):
   tau_out = tau * Ng
-  omega_out = omega * Ng
+  omega_out = omega/Ng
   power_out = tau_out * omega_out
 
 x = tau_out
@@ -64,7 +64,6 @@ y = power_out
 
 axs[2].plot(x, y)
 axs[2].set_title('motor power [W] vs. motor shaft torque [Nm]')
-# axs[1].set_ylim(-100,0)
 axs[2].set_xlabel("motor shaft torque [Nm]")
 axs[2].set_ylabel("motor power [W]")
 
