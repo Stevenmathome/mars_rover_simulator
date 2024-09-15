@@ -53,8 +53,6 @@ def get_gear_ratio(speed_reducer): # parker
 def tau_dcmotor(omega, motor): # parker
   if (type(motor) != dict):
     raise Exception("The motor input must be a dictionary type")
-  # elif not isinstance(omega, (int, float, np.ndarray)):
-  #     raise Exception("The omega input must be of type int, float, or np.ndarray omega")
   elif isinstance(omega, np.ndarray):
     if omega.ndim != 1:
         raise Exception("First input omega must be a scalar or vector numpy array. Matrices are not allowed")
@@ -112,6 +110,7 @@ def F_drive(omega,rover):
             raise ValueError("The omega input cannot contain Inf values")
         if omega.ndim != 1:
             raise ValueError
+
           
   motor = rover['wheel_assembly']['motor']
   speed_reducer = rover['wheel_assembly']['speed_reducer']
@@ -172,15 +171,26 @@ def F_rolling(omega, terrain_angle, rover, planet, Crr):
     gear_ratio = get_gear_ratio(rover['wheel_assembly']['speed_reducer'])
     radius = rover['wheel_assembly']['wheel']['radius']
     # Convert angle to radians
-    
-    
-    terrain_rad = np.radians(terrain_angle)
-    # Compute normal force
-    N_force = (mass * g * np.cos(terrain_rad)) / 6
-    # Compute rolling resistance force
-    wheel_omega = omega / gear_ratio
-    frr= (-Crr * N_force * math.erf(40*radius*wheel_omega)) * 6
-    return frr
+    if isinstance(terrain_angle,(int,float)):
+      terrain_rad = np.radians(terrain_angle)
+      # Compute normal force
+      N_force = (mass * g * np.cos(terrain_rad)) / 6
+      # Compute rolling resistance force
+      wheel_omega = omega / gear_ratio
+      frr = (-Crr * N_force * math.erf(40*radius*wheel_omega)) * 6
+      return frr
+      
+    else:
+      frr=[]
+      for i in range(len(terrain_angle)):
+        terrain_rad = np.radians(terrain_angle[i])
+        # Compute normal force
+        N_force = (mass * g * np.cos(terrain_rad)) / 6
+        # Compute rolling resistance force
+        wheel_omega = omega[i] / gear_ratio
+        frr.append((-Crr * N_force * math.erf(40*radius*wheel_omega)) * 6)
+      frr = np.array(frr)
+      return frr
 
 def F_net(omega, terrain_angle, rover, planet, Crr): #steve
   # Input validation
