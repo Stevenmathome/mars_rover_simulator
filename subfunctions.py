@@ -204,4 +204,4 @@ def F_net(omega, terrain_angle, rover, planet, Crr): #steve
   F_g = F_gravity(terrain_angle, rover, planet)
   F_r = F_rolling(omega, terrain_angle, rover, planet, Crr)
     
-  return F_d + F_g + F_r  
+  return F_d + F_g + F_r   
