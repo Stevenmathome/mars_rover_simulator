@@ -90,17 +90,15 @@ def tau_dcmotor(omega, motor): # parker
 def F_drive(omega,rover): 
   
   if (type(rover) != dict):
-    raise Exception("The motor input must be a dictionary type")
+    raise Exception("The second input rover must be a dictionary.")
   if rover is None:
         raise ValueError("The rover input cannot be None")
     # Check if omega is None
   if omega is None:
         raise ValueError("The omega input cannot be None")
-  elif isinstance(omega, (int, float)):
-    if np.isnan(omega) or np.isinf(omega):
-      raise Exception("The omega input cannot contain NaN or Inf values")
-  elif not isinstance(omega, (int, float, np.ndarray)):
-    raise Exception("The omega input must be of type int, float, or np.ndarray and not a NoneType")
+  #elif isinstance(omega, (int, float)):
+  #  if np.isnan(omega) or np.isinf(omega):
+  #    raise Exception("The omega input cannot contain NaN or Inf values")
   if isinstance(omega, list):
     raise Exception("The first input 'omega' must be a scalar or numpy array.")
   if isinstance(omega, np.ndarray):
