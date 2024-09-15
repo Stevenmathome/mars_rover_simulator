@@ -55,7 +55,7 @@ def tau_dcmotor(omega, motor): # parker
     raise Exception("The motor input must be a dictionary type")
   elif isinstance(omega, np.ndarray):
     if omega.ndim != 1:
-        raise Exception("First input must be a scalar or vector. Matrices are not allowed")
+        raise Exception("First input omega must be a scalar or vector numpy array. Matrices are not allowed")
 
   if isinstance(omega, (int, float)):
     tau = 0
@@ -87,29 +87,30 @@ def tau_dcmotor(omega, motor): # parker
 
 def F_drive(omega,rover): 
   
-  # if (type(rover) != dict):
-  #   raise Exception("The second input rover must be a dictionary.")
-  # if rover is None:
-  #       raise ValueError("The rover input cannot be None")
-  #   # Check if omega is None
-  # if omega is None:
-  #       raise ValueError("The omega input cannot be None")
-  # #elif isinstance(omega, (int, float)):
-  # #  if np.isnan(omega) or np.isinf(omega):
-  # #    raise Exception("The omega input cannot contain NaN or Inf values")
-  # if isinstance(omega, list):
-  #   raise Exception("The first input 'omega' must be a scalar or numpy array.")
-  # if isinstance(omega, np.ndarray):
-  #       # Check if omega contains None values
-  #       if np.any(omega == None):
-  #           raise ValueError("The omega input cannot contain None values")
-  #       # Check if omega contains NaN or Inf
-  #       if np.any(np.isnan(omega)):
-  #           raise ValueError("The omega input cannot contain NaN values")
-  #       if np.any(np.isinf(omega)):
-  #           raise ValueError("The omega input cannot contain Inf values")
-  #       if omega.ndim != 1:
-  #           raise ValueError
+  if (type(rover) != dict):
+    raise Exception("The second input rover must be a dictionary.")
+  if rover is None:
+        raise ValueError("The rover input cannot be None")
+    # Check if omega is None
+  if omega is None:
+        raise ValueError("The omega input cannot be None")
+  #elif isinstance(omega, (int, float)):
+  #  if np.isnan(omega) or np.isinf(omega):
+  #    raise Exception("The omega input cannot contain NaN or Inf values")
+  if isinstance(omega, list):
+    raise Exception("The first input 'omega' must be a scalar or numpy array.")
+  if isinstance(omega, np.ndarray):
+        # Check if omega contains None values
+        if np.any(omega == None):
+            raise ValueError("The omega input cannot contain None values")
+        # Check if omega contains NaN or Inf
+        if np.any(np.isnan(omega)):
+            raise ValueError("The omega input cannot contain NaN values")
+        if np.any(np.isinf(omega)):
+            raise ValueError("The omega input cannot contain Inf values")
+        if omega.ndim != 1:
+            raise ValueError
+
           
   motor = rover['wheel_assembly']['motor']
   speed_reducer = rover['wheel_assembly']['speed_reducer']
