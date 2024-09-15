@@ -17,7 +17,7 @@ rover = {
 planet = {'g': 3.72}
 
 motor = rover['wheel_assembly']['motor']
-omega = np.array([1,2,3,4,5,6,7,8,9,10])
+omega = np.linspace(0,3.8,100)
 speed_reducer = rover['wheel_assembly']['speed_reducer']
 
 
@@ -46,7 +46,7 @@ x = tau_out
 y = omega_out
 
 figs, axs = plt.subplots(nrows=3, ncols=1,figsize=(8, 12))
-axs[0].scatter(x, y)
+axs[0].plot(x, y)
 axs[0].set_title('motor shaft speed [rad/s] vs. motor shaft torque [Nm] ')
 axs[0].set_xlabel("motor shaft torque [Nm]")
 axs[0].set_ylabel("motor shaft speed [rad/s]")
@@ -54,16 +54,15 @@ axs[0].set_ylabel("motor shaft speed [rad/s]")
 x = tau_out
 y = power_out
 
-axs[1].scatter(x, y)
+axs[1].plot(x, y)
 axs[1].set_title('motor power [W] vs. motor shaft torque [Nm]')
-# axs[1].set_ylim(-100,0)
 axs[1].set_xlabel("motor shaft torque [Nm]")
 axs[1].set_ylabel("motor power [W]")
 
 x = omega_out
 y = power_out
 
-axs[2].scatter(x, y)
+axs[2].plot(x, y)
 axs[2].set_title('motor power [W] vs. motor shaft torque [Nm]')
 # axs[1].set_ylim(-100,0)
 axs[2].set_xlabel("motor shaft torque [Nm]")
