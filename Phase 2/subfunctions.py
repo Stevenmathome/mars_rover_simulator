@@ -242,10 +242,10 @@ def motorW(v, rover):
     if not isinstance (rover, (dict)):
         raise Exception("Rover must be a dictionary")
     
-    ng = get_gear_ratio(rover['speed reducer'])
+    ng = get_gear_ratio(rover['wheel_assembly']['speed_reducer'])
 
     
-    w= (v / rover['wheel']['radius'])/ng
+    w= (v / rover['wheel_assembly']['wheel']['radius'])/ng
     
     return w
     #inputs should be 1D array/ scalar and a dictionary\
@@ -293,7 +293,7 @@ def mechpower(v,rover):
     
     w = motorW(v, rover)
     
-    tau = tau_dcmotor(w, rover['motor'])
+    tau = tau_dcmotor(w, rover['wheel_assembly']['motor'])
     
     p = tau * w
     
@@ -314,19 +314,28 @@ def battenergy(t,v,rover):
     if np.ndim(v)!=1:
         raise Exception("v must be a 1D array")
     
-    
-    effcy_tau = rover['motor']['effcy_tau']
-    effcy = rover['motor']['effcy'] 
+    tau = tau_dcmotor(v,rover['wheel_assembly']['motor'])
+    p = mechpower(v,rover)
+    effcy_tau = rover['wheel_assembly']['motor']['effcy_tau']
+    effcy = rover['wheel_assembly']['motor']['effcy']
     
     effcy_fun = interp1d(effcy_tau, effcy, kind = 'cubic', fill_value='extrapolate')
+    # x = np.linspace(tau.min, tau.max, 100)
     
-    
-    tau = tau_dcmotor(v,rover['motor'])
-    p = mechpower(v,rover)
-    
-    
+    # print(p)
+    # print(effcy_fun(tau))
+    pbatt = p / effcy_fun(tau)
+  
+    E = spi.trapezoid(pbatt, t) * 6
     
     return E
     
-    
-    
+def simulate_rover(rover,planet,experiment,end_event):
+    if not isinstance(rover,dict):
+        raise Exception("rover must be a dictionary")
+    if not isinstance(planet,dict):
+        raise Exception("planet must be a dictionary")
+    if not isinstance(experiment,dict):
+        raise Exception("experiment must be a dictionary")
+    if not callable(end_event):
+        raise Exception("end_event must be a function")
