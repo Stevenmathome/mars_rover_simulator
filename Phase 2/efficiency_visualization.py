@@ -1,4 +1,4 @@
-from Utils.define_experiment import experiment1
+from define_experiment import experiment1
 import subfunctions as sf
 from scipy.interpolate import interp1d
 import numpy as np
