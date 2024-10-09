@@ -1,7 +1,7 @@
 import numpy as np
 import math
 from scipy.interpolate import interp1d
-from Utils.define_experiment import experiment1
+from define_experiment import experiment1
 import scipy.integrate as spi
 # Constants
 
@@ -34,6 +34,7 @@ planet = {'g': 3.72}
 
 experiment , end_event = experiment1()
 # Functions
+
 def get_mass(rover): # parker
   if (type(rover) != dict):
     raise Exception("The rover input must be a dictionary type")
@@ -86,9 +87,9 @@ def tau_dcmotor(omega, motor): # parker
 
     return tau
 
-  if isinstance(omega, np.ndarray):
+  elif isinstance(omega, np.ndarray):
     tau =  []
-    for i in range (len(omega)):
+    for i in range (omega.size):
       if omega.ndim != 1:
         raise Exception("The omega input must be a 1D numpy array")
       if  omega[i] > motor["speed_noload"]:
@@ -169,8 +170,8 @@ def F_gravity(terrain_angle, rover, planet):
 
 
 def F_rolling(omega, terrain_angle, rover, planet, Crr):
-    if not (np.isscalar(omega) and np.isscalar(terrain_angle)) and not (isinstance(omega, np.ndarray) and isinstance(terrain_angle, np.ndarray) and omega.shape == terrain_angle.shape):
-        raise Exception("The first two inputs must be either scalars or numpy arrays of the same shape.")
+    # if not (np.isscalar(omega) and np.isscalar(terrain_angle)) and not (isinstance(omega, np.ndarray) and isinstance(terrain_angle, np.ndarray) and omega.shape == terrain_angle.shape):
+    #     raise Exception("The first two inputs must be either scalars or numpy arrays of the same shape.")
 
     if np.any(np.abs(terrain_angle) > 75):
         raise Exception("All elements of terrain_angle must be between -75 degrees and +75 degrees.")
@@ -189,17 +190,13 @@ def F_rolling(omega, terrain_angle, rover, planet, Crr):
     gear_ratio = get_gear_ratio(rover['wheel_assembly']['speed_reducer'])
     radius = rover['wheel_assembly']['wheel']['radius']
     # Convert angle to radians
-    if isinstance(terrain_angle,(int,float)):
-      terrain_rad = np.radians(terrain_angle)
-      # Compute normal force
-      N_force = (mass * g * np.cos(terrain_rad)) / 6
-      # Compute rolling resistance force
-      wheel_omega = omega / gear_ratio
-      frr = (-Crr * N_force * math.erf(40*radius*wheel_omega)) * 6
-      return frr
       
-    else:
+    if isinstance(terrain_angle, np.ndarray):
       frr=[]
+      # this is causing problems
+      ###
+      ###
+      ###
       for i in range(len(terrain_angle)):
         terrain_rad = np.radians(terrain_angle[i])
         # Compute normal force
@@ -209,11 +206,19 @@ def F_rolling(omega, terrain_angle, rover, planet, Crr):
         frr.append((-Crr * N_force * math.erf(40*radius*wheel_omega)) * 6)
       frr = np.array(frr)
       return frr
+    else: 
+        terrain_rad = np.radians(terrain_angle)
+        # Compute normal force
+        N_force = (mass * g * np.cos(terrain_rad)) / 6
+        # Compute rolling resistance force
+        wheel_omega = omega / gear_ratio
+        frr = (-Crr * N_force * math.erf(40*radius*wheel_omega)) * 6
+        return frr
 
 def F_net(omega, terrain_angle, rover, planet, Crr): #steve
   # Input validation
-  if not (np.isscalar(omega) and np.isscalar(terrain_angle)) and not (isinstance(omega, np.ndarray) and isinstance(terrain_angle, np.ndarray) and omega.shape == terrain_angle.shape):
-    raise Exception("The first two inputs must be either scalars or numpy arrays of the same shape.")
+  # if not (np.isscalar(omega) and np.isscalar(terrain_angle)) and not (isinstance(omega, np.ndarray) and isinstance(terrain_angle, np.ndarray) and omega.shape == terrain_angle.shape):
+  #   raise Exception("The first two inputs must be either scalars or numpy arrays of the same shape.")
 
   if np.any(np.abs(terrain_angle) > 75):
     raise Exception("All elements of terrain_angle must be between -75 degrees and +75 degrees.")
@@ -235,101 +240,152 @@ def F_net(omega, terrain_angle, rover, planet, Crr): #steve
   return F_d + F_g + F_r   
 
 def motorW(v, rover): 
-    if not isinstance(v, (int,float,np.ndarray)):
+  """
+    Calculate the rotational speed of the motor shaft.
+  
+    Inputs:
+        v: translation speed of the rover (scalar or 1D array)
+        rover: dictionary containing important information about the rover
+    
+    Returns:
+        w: a scalar or 1D array containing the rotational speed of the motor shaft
+    """
+  if not isinstance(v, (int,float,np.ndarray)):
         raise Exception ("v must be and scalar or 1d array")
-    if np.ndim(v)!= 1:
+  if isinstance(v,np.ndarray) and np.ndim(v)!= 1:
         raise Exception('v must be a 1d array')
-    if not isinstance (rover, (dict)):
+  if not isinstance (rover, (dict)):
         raise Exception("Rover must be a dictionary")
     
-    ng = get_gear_ratio(rover['wheel_assembly']['speed_reducer'])
-
+  ng = get_gear_ratio(rover['wheel_assembly']['speed_reducer'])
     
-    w= (v / rover['wheel_assembly']['wheel']['radius'])/ng
+  radius=rover['wheel_assembly']['wheel']['radius']
+  # v is the output speed, so we need to mutlipty the ng to find the input angular velocity
+  w= (v / radius )*ng
+  
+  return w
     
-    return w
-    #inputs should be 1D array/ scalar and a dictionary\
         
 def rover_dynamics(t, y, rover, planet, experiment):
-    if not isinstance(t , (int , float)):
-        raise Exception(" t must be a scalar")
-    if not isinstance (y, (np.ndarray)):
-        raise Exception(" y must be a numpy array")
-    if np.ndim(y)!=1:
-        raise Exception("y must be a 1D array with two elements")
-    if len(y)!=2:
-        raise Exception("y must have two elements")
-    if not isinstance(rover, (dict)):
-        raise Exception("rover must be a dictionary")
-    if not isinstance(planet, (dict)):
-        raise Exception("planet must be a dictionary")
-    if not isinstance(experiment, (dict)):
-        raise Exception("experiment must be a dictionary")
-    
-    alpha_dist = experiment['alpha_dist']   
-    alpha_deg = experiment['alpha_deg']
-    
-    alpha_fun = interp1d(alpha_dist, alpha_deg, kind = 'cubic', fill_value='extrapolate')
-    # fit the cubic spline
-    terrian_angle = alpha_fun(y[1])
-    w = motorW(y[0], rover)
-    
-    F_net1 = F_net(w, terrian_angle, rover, planet, experiment['Crr'])
-    
-    acceleration = F_net1 / get_mass(rover)
-    
-    velocity = y[0] + acceleration * t
-    
-    return np.array([acceleration, velocity])
+  
+  """ 
+  Calculate the velocity and acceleration of the rover
+  
+  inputs:
+      t : time samples
+      y : two element array of [velocity, position]
+      rover: dictionary
+      planet: dictionary
+      experiment: dictionary
+
+  Returns:
+      dydt: two element array of [acceleration, velocty]
+  """  
+  # if len(t) != len(y):
+  #   raise Exception('')
+  if not isinstance(t , (int , float)):
+      raise Exception(" t must be a scalar")
+  if not isinstance (y, (np.ndarray)):
+      raise Exception(" y must be a numpy array")
+  if np.ndim(y)!=1:
+      raise Exception("y must be a 1D array with two elements")
+  if len(y)!=2:
+      raise Exception("y must have two elements")
+  if not isinstance(rover, (dict)):
+      raise Exception("rover must be a dictionary")
+  if not isinstance(planet, (dict)):
+      raise Exception("planet must be a dictionary")
+  if not isinstance(experiment, (dict)):
+      raise Exception("experiment must be a dictionary")
+  
+  alpha_dist = experiment['alpha_dist']   
+  alpha_deg = experiment['alpha_deg']
+  
+  alpha_fun = interp1d(alpha_dist, alpha_deg, kind = 'cubic', fill_value='extrapolate')
+  # fit the cubic spline
+  terrian_angle = float(alpha_fun(y[1]))
+  
+  w = motorW(y[0], rover)
+  
+  F_net1 = F_net(w, terrian_angle, rover, planet, experiment['Crr'])
+  
+  acceleration = F_net1 / get_mass(rover)
+  
+  velocity = y[0] + acceleration * t
+  
+  return np.array([acceleration,y[0]])
 
 
 def mechpower(v,rover):
-    if not isinstance(v, (int,float,np.ndarray)):
-        raise Exception ("v must be and scalar or 1d array")
-    if np.ndim(v)!= 1:
-        raise Exception('v must be a 1d array')
-    if not isinstance (rover, (dict)):
-        raise Exception("Rover must be a dictionary")
-    
-    w = motorW(v, rover)
-    
-    tau = tau_dcmotor(w, rover['wheel_assembly']['motor'])
-    
-    p = tau * w
-    
-    return p
-    #inputs should be 1D array/ scalar and a dictionary
+  """
+  calculate the mechanical power of the rover
+
+  Args:
+      v (scalar or array): array of translation speed of the rover
+      rover (dictionary): dictionary containing important information about the rover
+  Returns:
+      p (scalar or array): array of mechanical power of the rove
+      
+  """  
+  
+  if not isinstance(v, (int,float,np.ndarray)):
+      raise Exception ("v must be and scalar or 1d array")
+  if isinstance(v, np.ndarray) and np.ndim(v)!= 1:
+      raise Exception('v must be a 1d array')
+  if not isinstance (rover, (dict)):
+      raise Exception("Rover must be a dictionary")
+  
+  w = motorW(v, rover)
+  
+  tau = tau_dcmotor(w, rover['wheel_assembly']['motor'])
+  
+  p = tau * w
+  
+  return p
+  #inputs should be 1D array/ scalar and a dictionary
 
 def battenergy(t,v,rover):
-    if not isinstance(t,np.ndarray):
-        raise Exception("t must be a numpy array")
-    if not isinstance(v,np.ndarray):
-        raise Exception("v must be a numpy array")
-    if len(t)!=len(v):
-        raise Exception("t and v must have the same length")
-    if not isinstance(rover,dict):
-        raise Exception("rover must be a dictionary")
-    if np.ndim(t)!=1:
-        raise Exception("t must be a 1D array")
-    if np.ndim(v)!=1:
-        raise Exception("v must be a 1D array")
-    
-    tau = tau_dcmotor(v,rover['wheel_assembly']['motor'])
-    p = mechpower(v,rover)
-    effcy_tau = rover['wheel_assembly']['motor']['effcy_tau']
-    effcy = rover['wheel_assembly']['motor']['effcy']
-    
-    effcy_fun = interp1d(effcy_tau, effcy, kind = 'cubic', fill_value='extrapolate')
-    # x = np.linspace(tau.min, tau.max, 100)
-    
-    # print(p)
-    # print(effcy_fun(tau))
-    pbatt = p / effcy_fun(tau)
+  """
+  Calculate the energy consumed by the rover's battery
+
+  Args:
+      t (1d array): time samples
+      v (1d array): translation speed of the rover
+      rover (dictionary): dictionary containing important information about the rover
+      
+  Returns:
+      E(scalar): energy consumed by the rover's battery
+  """  
   
-    E = spi.trapezoid(pbatt, t) * 6
-    
-    return E
-    
+  if not isinstance(t,np.ndarray):
+      raise Exception("t must be a numpy array")
+  if not isinstance(v,np.ndarray):
+      raise Exception("v must be a numpy array")
+  if len(t)!=len(v):
+      raise Exception("t and v must have the same length")
+  if not isinstance(rover,dict):
+      raise Exception("rover must be a dictionary")
+  if np.ndim(t)!=1:
+      raise Exception("t must be a 1D array")
+  if np.ndim(v)!=1:
+      raise Exception("v must be a 1D array")
+  
+  tau = tau_dcmotor(v,rover['wheel_assembly']['motor'])
+  p = mechpower(v,rover)
+  effcy_tau = rover['wheel_assembly']['motor']['effcy_tau']
+  effcy = rover['wheel_assembly']['motor']['effcy']
+  
+  effcy_fun = interp1d(effcy_tau, effcy, kind = 'cubic', fill_value='extrapolate')
+  # x = np.linspace(tau.min, tau.max, 100)
+  
+  # print(p)
+  # print(effcy_fun(tau))
+  pbatt = p / effcy_fun(tau)
+
+  E = spi.trapezoid(pbatt, t)*6
+  
+  return E
+  
 def simulate_rover(rover,planet,experiment,end_event):
     if not isinstance(rover,dict):
         raise Exception("rover must be a dictionary")
@@ -339,3 +395,8 @@ def simulate_rover(rover,planet,experiment,end_event):
         raise Exception("experiment must be a dictionary")
     if not callable(end_event):
         raise Exception("end_event must be a function")
+      
+
+
+# w = motorW(np.array([1,2,3,4,5,7,8,9,10]),rover)
+# print(w)
