@@ -14,7 +14,7 @@ rover = {
       
       'motor': {'torque_stall': 170, 'torque_noload': 0, 'speed_noload': 3.80, 'mass': 5.0, 
                 'effcy_tau' : np.array([0, 10, 20, 40, 70, 165]) ,
-     'effcy' : np.array([0, .55,.75,.71,.50,.05])
+     'effcy' : np.array([0, .55, .75, .71, .50, .05])
                 },
       
       'speed_reducer': {'type': 'reverted', 'diam_pinion': 0.04, 'diam_gear': 0.07, 'mass': 1.5}
@@ -337,8 +337,9 @@ def mechpower(v,rover):
   
   w = motorW(v, rover)
   
+  print(w)
   tau = tau_dcmotor(w, rover['wheel_assembly']['motor'])
-  
+ 
   p = tau * w
   
   return p
@@ -370,19 +371,21 @@ def battenergy(t,v,rover):
   if np.ndim(v)!=1:
       raise Exception("v must be a 1D array")
   
-  tau = tau_dcmotor(v,rover['wheel_assembly']['motor'])
-  p = mechpower(v,rover)
+  w = motorW(v,rover)
+  tau = tau_dcmotor(w,rover['wheel_assembly']['motor'])
+  # print("tau",tau)
+  P = mechpower(v,rover)
+  # print('power',P)
   effcy_tau = rover['wheel_assembly']['motor']['effcy_tau']
   effcy = rover['wheel_assembly']['motor']['effcy']
+
   
   effcy_fun = interp1d(effcy_tau, effcy, kind = 'cubic', fill_value='extrapolate')
-  # x = np.linspace(tau.min, tau.max, 100)
-  
-  # print(p)
-  # print(effcy_fun(tau))
-  pbatt = p / effcy_fun(tau)
+  # print('effcy',effcy_fun(tau))
+  pbatt = P / effcy_fun(tau)
+  # print('pbatt',pbatt)
 
-  E = spi.trapezoid(pbatt, t)*6
+  E = spi.trapezoid(pbatt,t)*6
   
   return E
   
@@ -395,8 +398,3 @@ def simulate_rover(rover,planet,experiment,end_event):
         raise Exception("experiment must be a dictionary")
     if not callable(end_event):
         raise Exception("end_event must be a function")
-      
-
-
-# w = motorW(np.array([1,2,3,4,5,7,8,9,10]),rover)
-# print(w)
