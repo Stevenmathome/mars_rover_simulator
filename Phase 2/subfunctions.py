@@ -393,6 +393,20 @@ def battenergy(t,v,rover):
 
   
 def simulate_rover(rover,planet,experiment,end_event):
+  
+    """
+  Simulate the rovers trajectory and cacluate metrics
+
+    Args:
+        rover (dict): dictionary containing important information about the rover
+        planet (dict): dictionary containing important information about the planet
+        experiment (dict): dictionary containing important information about the rover
+        end_event (dict): dictionary containing important information about the rover
+        
+    Returns:
+        rover (dict): dictionary containing important information about the rover with telemetry data
+    """  
+  
     # checking validity of functions 
     if not isinstance(rover,dict):
         raise Exception("rover must be a dictionary")
@@ -449,4 +463,6 @@ def simulate_rover(rover,planet,experiment,end_event):
         'energy_per_distance': energy_per_distance
     }
     return rover
+  
+
 
