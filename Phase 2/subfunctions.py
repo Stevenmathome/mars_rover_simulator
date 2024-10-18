@@ -390,11 +390,47 @@ def battenergy(t,v,rover):
   return E
   
 def simulate_rover(rover,planet,experiment,end_event):
+    # checking validity of functions 
     if not isinstance(rover,dict):
         raise Exception("rover must be a dictionary")
     if not isinstance(planet,dict):
         raise Exception("planet must be a dictionary")
     if not isinstance(experiment,dict):
         raise Exception("experiment must be a dictionary")
-    if not callable(end_event):
-        raise Exception("end_event must be a function")
+    # if not callable(end_event):
+    #     raise Exception("end_event must be a function")
+    # # 
+
+    initial_position = experiment['initial_conditions'][0]
+    intial_velocity = experiment['initial_conditions'][1]
+
+
+    rover['telemetry'] = {
+        'time': [], 
+        'position': [], 
+        'velocity': [], 
+        'acceleration': [],
+    }
+    # function that is being used in ivp solver 
+    def rover_function(t,state):
+        return rover_dynamics(t,state,rover,planet,experiment)
+    # Inputting variables for ivp solver 
+    t_span = experiment['time_range']
+    initial_conditions = [initial_position,intial_velocity]
+    initial_conditions = np.array([initial_position,intial_velocity])
+    events = end_of_mission_event(end_event)
+    # Getting an object containing time and an array of velocities and positions 
+    solution = solve_ivp(rover_function,t_span,initial_conditions,events=events,dense_output=True)
+
+    for i,t in enumerate(solution.t):
+        position = solution.y[0,i]
+        velocity = solution.y[1,i]
+        # Obtaining acceleration value from rover_dynamics function 
+        acc_value, vel_val = rover_dynamics(t,initial_conditions,rover,planet, experiment)
+        # Adding time, position, velocity, and acceleration into the telemetry dictionary 
+        rover['telemetry']['time'].append(t)
+        rover['telemetry']['position'].append(position)
+        rover['telemetry']['velocity'].append(velocity)
+        rover['telemetry']['acceleration'].append(acc_value)
+
+    return rover
