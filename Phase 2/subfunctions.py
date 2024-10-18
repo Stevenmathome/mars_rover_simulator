@@ -3,6 +3,8 @@ import math
 from scipy.interpolate import interp1d
 from define_experiment import experiment1
 import scipy.integrate as spi
+from end_of_mission_event import end_of_mission_event
+from scipy.integrate import solve_ivp
 # Constants
 
 # Dictionaries
@@ -337,7 +339,7 @@ def mechpower(v,rover):
   
   w = motorW(v, rover)
   
-  print(w)
+  # print(w)
   tau = tau_dcmotor(w, rover['wheel_assembly']['motor'])
  
   p = tau * w
@@ -388,13 +390,63 @@ def battenergy(t,v,rover):
   E = spi.trapezoid(pbatt,t)*6
   
   return E
+
   
 def simulate_rover(rover,planet,experiment,end_event):
+    # checking validity of functions 
     if not isinstance(rover,dict):
         raise Exception("rover must be a dictionary")
     if not isinstance(planet,dict):
         raise Exception("planet must be a dictionary")
     if not isinstance(experiment,dict):
         raise Exception("experiment must be a dictionary")
-    if not callable(end_event):
-        raise Exception("end_event must be a function")
+    if not isinstance(end_event,dict):
+        raise Exception("experiment must be a dictionary")
+
+    initial_conditions = experiment['initial_conditions']
+
+    # function that is being used in ivp solver 
+    def rover_function(t,state):
+        return rover_dynamics(t,state,rover,planet,experiment)
+    # Inputting variables for ivp solver 
+    
+    t_span = experiment['time_range']
+    events = end_of_mission_event(end_event)
+    
+    # Getting an object containing time and an array of velocities and positions 
+    solution = solve_ivp(rover_function,t_span,initial_conditions,events=events,dense_output=True)
+    
+    # Extract solution data
+    time = solution.t
+    state = solution.y
+    # print(solution.y)
+    velocity = state[0]
+    position = state[1]
+
+    # Calculate metric for rover simulation
+    completion_time = time[-1]
+    distance_traveled = np.abs(position[-1] - position[0])
+    max_velocity = np.max(np.abs(velocity))
+    average_velocity = distance_traveled / completion_time
+
+    # Calculate power and energy
+    # motor_omega = motorW(velocity, rover)
+    power = mechpower(velocity, rover)
+    battery_energy = battenergy(time, velocity, rover)
+    energy_per_distance = battery_energy / distance_traveled 
+
+    # Update rover telemetry
+    rover['telemetry'] = {
+        'Time': time,
+        'completion_time': completion_time,
+        'velocity': velocity,
+        'position': position,
+        'distance_traveled': distance_traveled,
+        'max_velocity': max_velocity,
+        'average_velocity': average_velocity,
+        'power': power,
+        'battery_energy': battery_energy,
+        'energy_per_distance': energy_per_distance
+    }
+    return rover
+
