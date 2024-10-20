@@ -5,6 +5,7 @@ from define_experiment import experiment1
 import scipy.integrate as spi
 from end_of_mission_event import end_of_mission_event
 from scipy.integrate import solve_ivp
+
 # Constants
 
 # Dictionaries
@@ -463,6 +464,3 @@ def simulate_rover(rover,planet,experiment,end_event):
         'energy_per_distance': energy_per_distance
     }
     return rover
-  
-
-
