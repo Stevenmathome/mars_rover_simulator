@@ -3,8 +3,8 @@ import math
 from scipy.interpolate import interp1d
 from define_experiment import experiment1
 import scipy.integrate as spi
-from end_of_mission_event import end_of_mission_event
 from scipy.integrate import solve_ivp
+
 
 # Constants
 
@@ -314,7 +314,7 @@ def rover_dynamics(t, y, rover, planet, experiment):
   
   acceleration = F_net1 / get_mass(rover)
   
-  velocity = y[0] + acceleration * t
+  # velocity = y[0] + acceleration * t
   
   return np.array([acceleration,y[0]])
 
@@ -392,6 +392,40 @@ def battenergy(t,v,rover):
   
   return E
 
+def end_of_mission_event(end_event):
+    """
+    Defines an event that terminates the mission simulation. Mission is over
+    when rover reaches a certain distance, has moved for a maximum simulation 
+    time or has reached a minimum velocity.            
+    """
+    
+    mission_distance = end_event['max_distance']
+    mission_max_time = end_event['max_time']
+    mission_min_velocity = end_event['min_velocity']
+    
+    # Assume that y[1] is the distance traveled
+    distance_left = lambda t,y: mission_distance - y[1]
+    distance_left.terminal = True
+    
+    time_left = lambda t,y: mission_max_time - t
+    time_left.terminal = True
+    
+    velocity_threshold = lambda t,y: y[0] - mission_min_velocity;
+    velocity_threshold.terminal = True
+    velocity_threshold.direction = -1
+    
+    # terminal indicates whether any of the conditions can lead to the
+    # termination of the ODE solver. In this case all conditions can terminate
+    # the simulation independently.
+    
+    # direction indicates whether the direction along which the different
+    # conditions is reached matters or does not matter. In this case, only
+    # the direction in which the velocity treshold is arrived at matters
+    # (negative)
+    
+    events = [distance_left, time_left, velocity_threshold]
+    
+    return events
   
 def simulate_rover(rover,planet,experiment,end_event):
   
@@ -421,15 +455,15 @@ def simulate_rover(rover,planet,experiment,end_event):
     initial_conditions = experiment['initial_conditions']
 
     # function that is being used in ivp solver 
-    def rover_function(t,state):
-        return rover_dynamics(t,state,rover,planet,experiment)
+    dydt = lambda t,y: rover_dynamics(t,y,rover,planet,experiment)
     # Inputting variables for ivp solver 
     
     t_span = experiment['time_range']
     events = end_of_mission_event(end_event)
     
+    
     # Getting an object containing time and an array of velocities and positions 
-    solution = solve_ivp(rover_function,t_span,initial_conditions,events=events,dense_output=True)
+    solution = solve_ivp(dydt,t_span,initial_conditions,events=events,dense_output=True,method='RK45')
     
     # Extract solution data
     time = solution.t
@@ -464,3 +498,8 @@ def simulate_rover(rover,planet,experiment,end_event):
         'energy_per_distance': energy_per_distance
     }
     return rover
+  
+simulate_rover(rover,planet,experiment,end_event)
+
+print(rover['telemetry'])
+
