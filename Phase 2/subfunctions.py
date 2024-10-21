@@ -498,8 +498,4 @@ def simulate_rover(rover,planet,experiment,end_event):
         'energy_per_distance': energy_per_distance
     }
     return rover
-  
-simulate_rover(rover,planet,experiment,end_event)
-
-print(rover['telemetry'])
 
