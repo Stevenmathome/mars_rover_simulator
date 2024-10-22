@@ -5,7 +5,7 @@ import subfunctions as sf
 import pandas as pd
 
 
-# Load the rover dictionary from subfunctions
+# Rover Dict
 rover = {
   'wheel_assembly': {
       'wheel': {'radius': 0.30, 'mass': 1.0
@@ -33,15 +33,15 @@ planet = {'g': 3.72}
 # Load experiment and end_event data
 experiment, end_event = experiment1()
 
-# Update end_event parameters as specified
+# end_event parameters
 end_event['max_distance'] = 1000
 end_event['max_time'] = 10000
 end_event['min_velocity'] = 0.01
 
-# Run simulation
+# Run 
 rover = sf.simulate_rover(rover, planet, experiment, end_event)
 
-# Create figure with three subplots
+# Create Plots
 fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12))
 
 # Position vs time plot
@@ -68,6 +68,7 @@ ax3.grid(True)
 plt.tight_layout()
 plt.show()
 
+# Telem data to help write the report, comment out when done
 # Print telemetry data
 #print("\nRover Telemetry Data:")
 #print(f"Completion Time: {rover['telemetry']['completion_time']:.2f} s")
