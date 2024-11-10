@@ -259,9 +259,9 @@ def motorW(v, rover):
         raise Exception('v must be a 1d array')
   if not isinstance (rover, (dict)):
         raise Exception("Rover must be a dictionary")
-    
+  # get the gear ratio
   ng = get_gear_ratio(rover['wheel_assembly']['speed_reducer'])
-    
+  # get the radius of the wheel
   radius=rover['wheel_assembly']['wheel']['radius']
   # v is the output speed, so we need to mutlipty the ng to find the input angular velocity
   w= (v / radius )*ng
@@ -300,21 +300,19 @@ def rover_dynamics(t, y, rover, planet, experiment):
       raise Exception("planet must be a dictionary")
   if not isinstance(experiment, (dict)):
       raise Exception("experiment must be a dictionary")
-  
+  #Get the terrain angle and distance at that angle
   alpha_dist = experiment['alpha_dist']   
   alpha_deg = experiment['alpha_deg']
-  
-  alpha_fun = interp1d(alpha_dist, alpha_deg, kind = 'cubic', fill_value='extrapolate')
   # fit the cubic spline
+  alpha_fun = interp1d(alpha_dist, alpha_deg, kind = 'cubic', fill_value='extrapolate')
+  # get the terrain angle
   terrian_angle = float(alpha_fun(y[1]))
-  
+  #get the motor speed
   w = motorW(y[0], rover)
-  
+  #get the net force
   F_net1 = F_net(w, terrian_angle, rover, planet, experiment['Crr'])
-  
+  #find the acceleration from netforce and mass
   acceleration = F_net1 / get_mass(rover)
-  
-  # velocity = y[0] + acceleration * t
   
   return np.array([acceleration,y[0]])
 
@@ -337,12 +335,10 @@ def mechpower(v,rover):
       raise Exception('v must be a 1d array')
   if not isinstance (rover, (dict)):
       raise Exception("Rover must be a dictionary")
-  
+  # get the motor speed to find torque
   w = motorW(v, rover)
-  
-  # print(w)
   tau = tau_dcmotor(w, rover['wheel_assembly']['motor'])
- 
+  # calcuate the mechanical power
   p = tau * w
   
   return p
@@ -374,20 +370,17 @@ def battenergy(t,v,rover):
   if np.ndim(v)!=1:
       raise Exception("v must be a 1D array")
   
+  #get the mechanical power output of the rover
   w = motorW(v,rover)
   tau = tau_dcmotor(w,rover['wheel_assembly']['motor'])
-  # print("tau",tau)
   P = mechpower(v,rover)
-  # print('power',P)
+  # create a function to calulcate the efficiency
   effcy_tau = rover['wheel_assembly']['motor']['effcy_tau']
   effcy = rover['wheel_assembly']['motor']['effcy']
-
-  
   effcy_fun = interp1d(effcy_tau, effcy, kind = 'cubic', fill_value='extrapolate')
-  # print('effcy',effcy_fun(tau))
+  #get power of the battery
   pbatt = P / effcy_fun(tau)
-  # print('pbatt',pbatt)
-
+  #calculate the energy consumed by the battery
   E = spi.trapezoid(pbatt,t)*6
   
   return E
@@ -457,10 +450,8 @@ def simulate_rover(rover,planet,experiment,end_event):
     # function that is being used in ivp solver 
     dydt = lambda t,y: rover_dynamics(t,y,rover,planet,experiment)
     # Inputting variables for ivp solver 
-    
     t_span = experiment['time_range']
     events = end_of_mission_event(end_event)
-    
     
     # Getting an object containing time and an array of velocities and positions 
     solution = solve_ivp(dydt,t_span,initial_conditions,events=events,dense_output=True,method='RK45')
@@ -468,7 +459,6 @@ def simulate_rover(rover,planet,experiment,end_event):
     # Extract solution data
     time = solution.t
     state = solution.y
-    # print(solution.y)
     velocity = state[0]
     position = state[1]
 

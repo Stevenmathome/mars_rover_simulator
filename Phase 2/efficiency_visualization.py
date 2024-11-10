@@ -29,17 +29,19 @@ rover = {
 
 planet = {'g': 3.72}
 
-
+# define experiment and end_event
 experiment , end_event = experiment1()
 
-
+# get effcy tay and effcy from rover
 effcy_tau = rover['wheel_assembly']['motor']['effcy_tau']   
 effcy = rover['wheel_assembly']['motor']['effcy']
 
+#create effcy function to interpolate the data
 effcy_fun = interp1d(effcy_tau, effcy, kind = 'cubic', fill_value='extrapolate') #fit the cubic spline
-
+# create a continuous range of torque values for plotting
 x = np.linspace(effcy_tau[0], effcy_tau[-1], 100)
 
+#plot effcy vs torque as a continous function and data points
 plt.plot(x, effcy_fun(x)*100,label = 'Cubic Spline')
 plt.plot(effcy_tau, effcy*100, '*', label = 'Data Points', )
 plt.xlabel('Torque (N-m)')
