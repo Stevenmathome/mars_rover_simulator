@@ -54,13 +54,13 @@ rover_sucess = []
 altitude=[]
 safe_landing_vecolcity = 1
 for i in range(len(x)):
-    print(x[i])
     
     edl_system = redefine_edl_system(edl_system)
     edl_system['parachute']['diameter'] = x[i]
     # the simulation. changing last argument to false turns off message echo
     
-    [t, Y, edl_system] = simulate_edl(edl_system, mars, mission_events, tmax, True,True)
+
+    [t, Y, edl_system] = simulate_edl(edl_system, mars, mission_events, tmax, True,Modified=True)
     time.append(t[-1])
     rover_speed.append(Y[0, -1])
     altitude.append(Y[1, -1])
