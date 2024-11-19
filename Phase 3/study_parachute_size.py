@@ -53,6 +53,7 @@ rover_sucess = []
 altitude=[]
 safe_landing_vecolcity = -.1
 for i in range(len(x)):
+
     
     edl_system = redefine_edl_system(edl_system)
     edl_system['parachute']['diameter'] = x[i]
