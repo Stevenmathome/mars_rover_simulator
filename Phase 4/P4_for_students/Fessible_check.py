@@ -12,7 +12,10 @@ import pandas as pd
 from csv import writer
 
 df= pd.read_csv('rover_designs.csv')
+df.drop(columns=['Unnamed: 0'], inplace=True) 
 
+rows= 0 
+drop = []
 for j in range (df.shape[0]):
     
     planet = define_planet()
@@ -70,6 +73,11 @@ for j in range (df.shape[0]):
         
     else:  # nonsense to let us know this did not work
         print('Solution not feasible')
-        df=df.drop(j)
-        
+        rows+=1
+        drop.append(j)
+
+df.drop(drop, inplace=True)
+df.reset_index(drop=True, inplace=True)       
+
 df.to_csv('rover_designs.csv')
+print(f'{rows} rows were deleted')
