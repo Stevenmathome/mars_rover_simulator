@@ -15,9 +15,14 @@ import pickle
 import sys
 import pandas as pd
 from csv import writer
+import tqdm as tqdm
 
-for i in range(5):
+
+for i in range(2):
+    
+
     # our design selections (battery type, etc.)
+    
     planet = define_planet()
     edl_system = define_edl_system()
     mission_events = define_mission_events()
@@ -31,8 +36,10 @@ for i in range(5):
 
     #constraints
     edl_system = define_chassis(edl_system,'magnesium') # motor type
-    edl_system = define_motor(edl_system, motors[2]) # motor type
-    edl_system = define_batt_pack(edl_system,battery[2], 10)
+    edl_system = define_motor(edl_system, motors[5]) # motor type
+    edl_system = define_batt_pack(edl_system,battery[1],2)
+    # edl_system = 
+    
 
     tmax = 5000
 
@@ -135,10 +142,10 @@ for i in range(5):
     # call the SLSQP optimizer ---------------------------------------------------#
     #testing different mass chasis
 
-    edl_system['rover']['chassis']['mass'] = 250
-    mass= get_mass_edl(edl_system)
-    strength = 250* edl_system['rover']['chassis']['mass']
-    print(f"mass {mass:.1f}, strength {strength:.1f}")
+    # edl_system['rover']['chassis']['mass'] = 250
+    # mass= get_mass_edl(edl_system)
+    # strength = 250* edl_system['rover']['chassis']['mass']
+    # print(f"mass {mass:.1f}, strength {strength:.1f}")
 
     # min_mass_steel = 40000
     # min_mass_magnesium
@@ -146,18 +153,19 @@ for i in range(5):
 
 
     res_save = []
-    for i in range(2):
+    for i in tqdm.tqdm(range(3), desc='Optimizing', position=0, leave=True, dynamic_ncols=True):
         x0 = np.array(
-            [np.random.uniform(14,19), #parachute diameter
+            [np.random.uniform(14,17), #parachute diameter
             np.random.uniform(0.2,0.7), #wheel radius
             # np.random.uniform(250,800), #chassis mass
             250, #chassis mass
             np.random.uniform(0.05,0.12), #speed reducer gear diameter
-            np.random.uniform(100,290)] #rocket fuel mass
+            # np.random.uniform(100,290)
+            100] #rocket fuel mass
                     )
         
         reset_initial_conditions(edl_system)
-        options = {'maxiter': 10,
+        options = {'maxiter': 5,
                     'disp' : True}
         res = minimize(obj_f, x0, method='SLSQP', constraints=ineq_cons, bounds=bounds, 
                         options=options, callback=callbackF)
@@ -238,87 +246,89 @@ for i in range(5):
   # about the performance of the design
   # This will be helpful if you choose to create a loop around your optimizers and their initializations
   # to try different starting points for the optimization.
-  total_cost = []
-  for i in range(len(res_save)):
-      xbest = res_save[i]
-      edl_system = redefine_edl_system(edl_system)
 
-      edl_system['parachute']['diameter'] = xbest[0]
-      edl_system['rover']['wheel_assembly']['wheel']['radius'] = xbest[1]
-      edl_system['rover']['chassis']['mass'] = xbest[2]
-      edl_system['rover']['wheel_assembly']['speed_reducer']['diam_gear'] = xbest[3]
-      edl_system['rocket']['initial_fuel_mass'] = xbest[4]
-      edl_system['rocket']['fuel_mass'] = xbest[4]
-      total_cost.append(get_cost_edl(edl_system))
+    total_cost = []
+    for i in range(len(res_save)):
+        xbest = res_save[i]
+        edl_system = redefine_edl_system(edl_system)
 
-  ind = total_cost.index(min(total_cost)) 
-  xbest = res_save[ind]  
+        edl_system['parachute']['diameter'] = xbest[0]
+        edl_system['rover']['wheel_assembly']['wheel']['radius'] = xbest[1]
+        edl_system['rover']['chassis']['mass'] = xbest[2]
+        edl_system['rover']['wheel_assembly']['speed_reducer']['diam_gear'] = xbest[3]
+        edl_system['rocket']['initial_fuel_mass'] = xbest[4]
+        edl_system['rocket']['fuel_mass'] = xbest[4]
+        total_cost.append(get_cost_edl(edl_system))
+
+    ind = total_cost.index(min(total_cost)) 
+    xbest = res_save[ind]  
 
   # *****************************************************************************
   # These lines save your design for submission for the rover competition.
   # You will want to change them to match your team information.
 
-  edl_system['team_name'] = 'FunTeamName'  # change this to something fun for your team (or just your team number)
-  edl_system['team_number'] = 4    # change this to your assigned team number (also change it below when saving your pickle file)
 
-  # This will create a file that you can submit as your competition file.
-  with open('FA24_501team99.pickle', 'wb') as handle:
-      pickle.dump(edl_system, handle, protocol=pickle.HIGHEST_PROTOCOL)
-  # *****************************************************************************
+    edl_system['team_name'] = 'FunTeamName'  # change this to something fun for your team (or just your team number)
+    edl_system['team_number'] = 4    # change this to your assigned team number (also change it below when saving your pickle file)
 
-  #del edl_system
-  #with open('challenge_design_team9999.pickle', 'rb') as handle:
-  #    edl_system = pickle.load(handle)
+    # This will create a file that you can submit as your competition file.
+    with open('FA24_501team99.pickle', 'wb') as handle:
+        pickle.dump(edl_system, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # *****************************************************************************
 
-  time_edl_run,_,edl_system = simulate_edl(edl_system,planet,mission_events,tmax,True)
-  time_edl = time_edl_run[-1]
+    #del edl_system
+    #with open('challenge_design_team9999.pickle', 'rb') as handle:
+    #    edl_system = pickle.load(handle)
 
-  edl_system['rover'] = simulate_rover(edl_system['rover'],planet,experiment,end_event)
-  time_rover = edl_system['rover']['telemetry']['completion_time']
+    time_edl_run,_,edl_system = simulate_edl(edl_system,planet,mission_events,tmax,True)
+    time_edl = time_edl_run[-1]
 
-  total_time = time_edl + time_rover
+    edl_system['rover'] = simulate_rover(edl_system['rover'],planet,experiment,end_event)
+    time_rover = edl_system['rover']['telemetry']['completion_time']
 
-  edl_system_total_cost=get_cost_edl(edl_system)
+    total_time = time_edl + time_rover
 
-  print('----------------------------------------')
-  print('----------------------------------------')
-  print('Optimized parachute diameter   = {:.6f} [m]'.format(xbest[0]))
-  print('Optimized rocket fuel mass     = {:.6f} [kg]'.format(xbest[4]))
-  print('Time to complete EDL mission   = {:.6f} [s]'.format(time_edl))
-  print('Rover velocity at landing      = {:.6f} [m/s]'.format(edl_system['rover_touchdown_speed']))
-  print('Optimized wheel radius         = {:.6f} [m]'.format(xbest[1])) 
-  print('Optimized d2                   = {:.6f} [m]'.format(xbest[3])) 
-  print('Optimized chassis mass         = {:.6f} [kg]'.format(xbest[2]))
-  print('Time to complete rover mission = {:.6f} [s]'.format(time_rover))
-  print('Time to complete mission       = {:.6f} [s]'.format(total_time))
-  print('Average velocity               = {:.6f} [m/s]'.format(edl_system['rover']['telemetry']['average_velocity']))
-  print('Distance traveled              = {:.6f} [m]'.format(edl_system['rover']['telemetry']['distance_traveled']))
-  print('Battery energy per meter       = {:.6f} [J/m]'.format(edl_system['rover']['telemetry']['energy_per_distance']))
-  print('Total cost                     = {:.6f} [$]'.format(edl_system_total_cost))
-  print('----------------------------------------')
-  print('----------------------------------------')
+    edl_system_total_cost=get_cost_edl(edl_system)
 
-  new_row = {
-      'chassis_type': edl_system['rover']['chassis']['type'],
-      'battery_type': edl_system['rover']['power_subsys']['battery']['battery_type'],
-      'battery_number': edl_system['rover']['power_subsys']['battery']['num_modules'],
-      'parachute_diameter': xbest[0],
-      'wheel_radius': xbest[1],
-      'chassis_mass': xbest[2],
-      'gear_diameter': xbest[3],
-      'fuel_mass': xbest[4],
-      'total_time': total_time,
-      "edl_time": time_edl,
-      'time_rover': time_rover,
-      'cost': total_cost[ind]
-  }
+    print('----------------------------------------')
+    print('----------------------------------------')
+    print('Optimized parachute diameter   = {:.6f} [m]'.format(xbest[0]))
+    print('Optimized rocket fuel mass     = {:.6f} [kg]'.format(xbest[4]))
+    print('Time to complete EDL mission   = {:.6f} [s]'.format(time_edl))
+    print('Rover velocity at landing      = {:.6f} [m/s]'.format(edl_system['rover_touchdown_speed']))
+    print('Optimized wheel radius         = {:.6f} [m]'.format(xbest[1])) 
+    print('Optimized d2                   = {:.6f} [m]'.format(xbest[3])) 
+    print('Optimized chassis mass         = {:.6f} [kg]'.format(xbest[2]))
+    print('Time to complete rover mission = {:.6f} [s]'.format(time_rover))
+    print('Time to complete mission       = {:.6f} [s]'.format(total_time))
+    print('Average velocity               = {:.6f} [m/s]'.format(edl_system['rover']['telemetry']['average_velocity']))
+    print('Distance traveled              = {:.6f} [m]'.format(edl_system['rover']['telemetry']['distance_traveled']))
+    print('Battery energy per meter       = {:.6f} [J/m]'.format(edl_system['rover']['telemetry']['energy_per_distance']))
+    print('Total cost                     = {:.6f} [$]'.format(edl_system_total_cost))
+    print('----------------------------------------')
+    print('----------------------------------------')
 
-
-  # Convert the new row to a DataFrame and concatenate it with the existing one
-  df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-  print(df)
-
-  # Append the new DataFrame row to the CSV file
-  df.to_csv('rover_designs.csv', mode='a', index=False, header=False)
+    new_row = {
+        'chassis_type': edl_system['rover']['chassis']['type'],
+        'battery_type': edl_system['rover']['power_subsys']['battery']['battery_type'],
+        'battery_number': edl_system['rover']['power_subsys']['battery']['num_modules'],
+        'parachute_diameter': xbest[0],
+        'motor_type':edl_system['rover']['wheel_assembly']['motor']['type'],
+        'wheel_radius': xbest[1],
+        'chassis_mass': xbest[2],
+        'gear_diameter': xbest[3],
+        'fuel_mass': xbest[4],
+        'total_time': total_time,
+        "edl_time": time_edl,
+        'time_rover': time_rover,
+        'cost': total_cost[ind]
+    }
 
 
+    # Convert the new row to a DataFrame and concatenate it with the existing one
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+    # print(df)
+
+    # Append the new DataFrame row to the CSV file
+    df.to_csv('rover_designs.csv', index=False, )
+    
