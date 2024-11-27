@@ -17,8 +17,10 @@ import pandas as pd
 from csv import writer
 import tqdm as tqdm
 
+
 for i in range(2):
     
+
     # our design selections (battery type, etc.)
     
     planet = define_planet()
@@ -244,6 +246,7 @@ for i in range(2):
   # about the performance of the design
   # This will be helpful if you choose to create a loop around your optimizers and their initializations
   # to try different starting points for the optimization.
+
     total_cost = []
     for i in range(len(res_save)):
         xbest = res_save[i]
@@ -263,6 +266,7 @@ for i in range(2):
   # *****************************************************************************
   # These lines save your design for submission for the rover competition.
   # You will want to change them to match your team information.
+
 
     edl_system['team_name'] = 'FunTeamName'  # change this to something fun for your team (or just your team number)
     edl_system['team_number'] = 4    # change this to your assigned team number (also change it below when saving your pickle file)
@@ -328,5 +332,3 @@ for i in range(2):
     # Append the new DataFrame row to the CSV file
     df.to_csv('rover_designs.csv', index=False, )
     
-
-

@@ -10,6 +10,7 @@ import pickle
 import sys
 import pandas as pd
 from csv import writer
+
 from tqdm.auto import tqdm
 
 
@@ -97,6 +98,7 @@ df.sort_values(by='total_time', inplace=True)
 df.reset_index(drop=True, inplace=True)
 df = df.head(10)
        
+
 
 df.to_csv('rover_designs.csv')
 print(f'{rows} rows were deleted')
